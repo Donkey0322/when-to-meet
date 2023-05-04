@@ -1,0 +1,39 @@
+@font-face {
+  font-family: "Nunito";
+  src: local("Nunito"), url(./font/static/Nunito-Regular.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "Lobster";
+  src: local("Lobster"),
+    url(./font/static/Lobster-Regular.ttf) format("truetype");
+}
+
+$fonts: url(./font/static/Nunito-ExtraLight.ttf),
+  url(./font/static/Nunito-Light.ttf), url(./font/static/Nunito-Regular.ttf),
+  url(./font/static/Nunito-Regular.ttf), url(./font/static/Nunito-Medium.ttf),
+  url(./font/static/Nunito-SemiBold.ttf), url(./font/static/Nunito-Bold.ttf),
+  url(./font/static/Nunito-ExtraBold.ttf), url(./font/static/Nunito-Black.ttf);
+
+@each $font in $fonts {
+  $i: index($fonts, $font);
+  @font-face {
+    font-family: "Nunito";
+    font-weight: $i * 100;
+    src: local("Nunito"), $font format("truetype");
+  }
+}
+
+body,
+html {
+  margin: 0;
+  height: auto;
+  font-family: "Nunito";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
