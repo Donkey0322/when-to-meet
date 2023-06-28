@@ -1,27 +1,26 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useMeet } from "../hooks/useMeet";
 import { RWD } from "../../constant";
 import Base from "../../components/Base/orange3_white7";
 import Notification from "../../components/Notification";
-import * as AXIOS from "../../middleware";
 const {
   RightContainer,
   RightContainer: { InfoContainer },
 } = Base;
 const { RWDHeight } = RWD;
 
-const ResetPassword = () => {
-  const { t } = useTranslation();
+export default function ResetPassword() {
+  const {
+    MIDDLEWARE: { forgetPassword },
+  } = useMeet();
   const [email, setEmail] = useState("");
   const [notification, setNotification] = useState({});
-
-  const handleEmailChange = (e) => {
-    setEmail(e.target.value);
-  };
+  const { t } = useTranslation();
 
   const handleVerifyClick = async () => {
     try {
-      const { error } = await AXIOS.forgetPassword({
+      const { error } = await forgetPassword({
         email,
       });
       if (error) {
@@ -64,7 +63,9 @@ const ResetPassword = () => {
               <InfoContainer.Input
                 placeholder="Email"
                 value={email}
-                onChange={handleEmailChange}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                }}
               />
             </InfoContainer.InputContainer>
             <InfoContainer.Button disabled={!email} onClick={handleVerifyClick}>
@@ -75,6 +76,4 @@ const ResetPassword = () => {
       </Base>
     </>
   );
-};
-
-export default ResetPassword;
+}

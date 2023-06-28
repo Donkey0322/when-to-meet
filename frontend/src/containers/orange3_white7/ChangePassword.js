@@ -1,23 +1,23 @@
-/**************************************************************************************************
- DONE!
-**************************************************************************************************/
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useLocation } from "react-router-dom";
-import * as AXIOS from "../../middleware";
+import { useMeet } from "../hooks/useMeet";
 import Base from "../../components/Base/orange3_white7";
 import { RWD } from "../../constant";
-import { useTranslation } from 'react-i18next';
 const { InfoContainer } = Base.RightContainer;
 const { RWDHeight } = RWD;
 
-const ChangePassword = () => {
-  const { t } = useTranslation();
+export default function ChangePassword() {
+  const search = useLocation().search;
+  const {
+    MIDDLEWARE: { resetPassword },
+  } = useMeet();
+  const navigate = useNavigate();
   const [newPassword, setNewPassword] = useState({
     "New Password": "",
     "Confirmed New Password": "",
   });
-  const search = useLocation().search;
-  const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleResetChange = (e) => {
     const { name, value } = e.target;
@@ -29,15 +29,13 @@ const ChangePassword = () => {
 
   const handleClick = async () => {
     try {
-      console.log(newPassword);
-      const result = await AXIOS.resetPassword({
+      await resetPassword({
         password: newPassword["New Password"],
         code: new URLSearchParams(search).get("code"),
       });
       navigate("/login");
     } catch (e) {
       alert(e);
-      console.log(e);
     }
   };
 
@@ -78,6 +76,4 @@ const ChangePassword = () => {
       </Base.RightContainer>
     </Base>
   );
-};
-
-export default ChangePassword;
+}

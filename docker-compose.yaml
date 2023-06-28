@@ -1,34 +1,44 @@
 version: "3.8"
 
 services:
-    backend:
-        container_name: sdm-backend
-        build: ./backend
-        restart: unless-stopped
-        ports:
-            - "8000:8000"
-        volumes:
-            - ./backend:/app
-        env_file:
-            - ./backend/.env
-        depends_on:
-            - db
-        networks:
-            - internal
-    db:
-        image: postgres:13-alpine
-        container_name: sdm-database
-        restart: always
-        ports:
-            - "5432:5432"
-        environment:
-            POSTGRES_USER: dev
-            POSTGRES_PASSWORD: dev
-            POSTGRES_DB: database
-        volumes:
-            - ./database/db_data:/var/lib/postgresql/data
-            - ./database/sql/:/docker-entrypoint-initdb.d
-        networks:
-            - internal
+  backend:
+    container_name: sdm-backend
+    build: ./backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db
+    networks:
+      - internal
+  db:
+    image: postgres:13-alpine
+    container_name: sdm-database
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: database
+    volumes:
+      - ./database/db_data:/var/lib/postgresql/data
+      - ./database/sql/:/docker-entrypoint-initdb.d
+    networks:
+      - internal
+  # frontend:
+  #   build: ./frontend
+  #   container_name: sdm-frontend
+  #   ports:
+  #     - "3000:3000"
+  #   stdin_open: true
+  #   tty: true
+  #   depends_on:
+  #     - backend
+
 networks:
-    internal:
+  internal:

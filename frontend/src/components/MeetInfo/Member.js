@@ -1,15 +1,17 @@
 /*TODO:********************************************************************************************
   1.Style, hover 時框框的 border
 **************************************************************************************************/
-import { Button, Dropdown, Spin, ConfigProvider } from "antd";
+import { Dropdown, Spin, ConfigProvider, Tooltip } from "antd";
 import _, { parseInt } from "lodash";
 import { useCallback, useState, useEffect } from "react";
 import styled from "styled-components";
 import Tag from "../Tag";
+import Button from "../../components/Button";
 import { RWD } from "../../constant";
-import { searchMember } from "../../middleware";
+import { useMeet } from "../../containers/hooks/useMeet";
 const { RWDHeight, RWDFontSize, RWDWidth, RWDRadius } = RWD;
 const MemberTag = Tag("member");
+const RectButton = Button("rect");
 
 const MenuItem = styled.div`
   width: ${RWDWidth(290)};
@@ -27,11 +29,6 @@ const MenuItem = styled.div`
       /* background-color: ; */
     }
   }
-  /* &::-webkit-scrollbar {
-    display: none;
-  }
-  -ms-overflow-style: none;
-  scrollbar-width: none; */
 `;
 
 const Member = ({ setMeetData, Input, rawMember = [] }) => {
@@ -46,9 +43,12 @@ const Member = ({ setMeetData, Input, rawMember = [] }) => {
   const [selectedKeys, setSelectedKeys] = useState([]); //MouseDown 設置
   const [open, setOpen] = useState(false); //打開 dropdown
   const [input, setInput] = useState(""); //Input 裡的文字
+  const {
+    USERINFO: { ID },
+    MIDDLEWARE: { searchMember },
+  } = useMeet();
 
   const handleSearchMember = async (key) => {
-    console.log(key);
     try {
       const {
         data: { accounts },
@@ -63,7 +63,29 @@ const Member = ({ setMeetData, Input, rawMember = [] }) => {
                   data-username={m.username}
                   data-email={m.email}
                 >
-                  {m.username}
+                  <div
+                    style={{ display: "flex", flexDirection: "column" }}
+                    data-id={m.id}
+                    data-username={m.username}
+                    data-email={m.email}
+                  >
+                    <div
+                      style={{ fontSize: RWDFontSize(20) }}
+                      data-id={m.id}
+                      data-username={m.username}
+                      data-email={m.email}
+                    >
+                      {m.username}
+                    </div>
+                    <div
+                      style={{ fontSize: RWDFontSize(12), color: "#575757" }}
+                      data-id={m.id}
+                      data-username={m.username}
+                      data-email={m.email}
+                    >
+                      {m.email}
+                    </div>
+                  </div>
                 </MenuItem>
               ),
             }))
@@ -110,16 +132,41 @@ const Member = ({ setMeetData, Input, rawMember = [] }) => {
     setLoading(Boolean(value));
     setSelectedKeys([]);
     setOpen(Boolean(value));
+    setCurrentMember({
+      username: "",
+      id: "",
+      email: "",
+    });
+    if (value?.includes("@")) {
+      setCurrentMember({ username: "", id: "", email: value });
+    }
     if (value) {
       debounceSearchMember(value);
     }
   };
 
   const handleMemberJoin = () => {
-    setMeetData((prev) => ({
-      ...prev,
-      member_ids: [...prev.member_ids, parseInt(Number(currentMember?.id))],
-    }));
+    if (currentMember?.id) {
+      setMeetData((prev) => ({
+        ...prev,
+        member_ids: [...prev.member_ids, currentMember?.id],
+      }));
+      if (member.find((m) => m?.email === currentMember?.email)) {
+        setMeetData((prev) => ({
+          ...prev,
+          emails: prev.emails.filter((email) => email !== currentMember.email),
+        }));
+        setMember((prev) =>
+          prev.filter((m) => m.email !== currentMember.email)
+        );
+      }
+    } else {
+      setOpen(false);
+      setMeetData((prev) => ({
+        ...prev,
+        emails: [...prev.emails, currentMember?.email],
+      }));
+    }
     setMember((prev) => [...prev, currentMember]);
 
     setCurrentMember({ username: "", id: "", email: "" });
@@ -127,24 +174,46 @@ const Member = ({ setMeetData, Input, rawMember = [] }) => {
   };
 
   const handleMemberSelect = (e) => {
-    setSelectedKeys([e.target.firstChild.data]);
+    setSelectedKeys([e.target.dataset.username]);
   };
 
   const handleMemberClick = (e) => {
     const { username, id, email } = e.domEvent.target.dataset;
-    setCurrentMember({ username, id, email });
+    setCurrentMember({ username, id: parseInt(Number(id)), email });
     setInput(username);
     setOpen(false);
   };
 
   const handleMemberDelete = (item) => () => {
-    setMeetData((prev) => ({
-      ...prev,
-      member_ids: prev.member_ids.filter(
-        (m) => m.id !== parseInt(Number(item.id))
-      ),
-    }));
-    setMember((prev) => prev.filter((m) => m.id !== item.id));
+    if (item.id) {
+      setMeetData((prev) => ({
+        ...prev,
+        member_ids: prev.member_ids.filter((id) => id !== item.id),
+      }));
+      setMember((prev) => prev.filter((m) => m.id !== item.id));
+    } else if (item.email) {
+      setMeetData((prev) => ({
+        ...prev,
+        emails: prev.emails.filter((email) => email !== item.email),
+      }));
+      setMember((prev) => prev.filter((m) => m.email !== item.email));
+    } else {
+      setMeetData((prev) => ({
+        ...prev,
+        remove_guest_names: [
+          ...prev.remove_guest_names,
+          item.username.replace("guest_"),
+        ],
+      }));
+      setMember((prev) => prev.filter((m) => m.username !== item.username));
+    }
+  };
+  const checkMemberInclude = () => {
+    if (currentMember?.id) {
+      return Boolean(member.find((m) => m?.email === currentMember?.email)?.id);
+    } else {
+      return Boolean(member.find((m) => m?.email === currentMember?.email));
+    }
   };
 
   return (
@@ -171,16 +240,15 @@ const Member = ({ setMeetData, Input, rawMember = [] }) => {
                 borderRadiusSM: 0,
                 borderRadiusOuter: 10,
               },
-              Button: {
-                colorBgContainer: "#5A8EA4",
-                colorPrimaryActive: "#FFFFFF",
-                colorPrimaryHover: "#FFFFFF",
-              },
             },
           }}
         >
           <Dropdown
-            overlayStyle={{ width: RWDWidth(350), maxWidth: RWDWidth(350) }}
+            overlayStyle={{
+              width: RWDWidth(350),
+              maxWidth: RWDWidth(350),
+              minWidth: RWDWidth(350),
+            }}
             menu={{
               items: users,
               selectedKeys,
@@ -192,20 +260,32 @@ const Member = ({ setMeetData, Input, rawMember = [] }) => {
           >
             <Input value={input} onChange={handleInputChange} />
           </Dropdown>
-          <Button
-            style={{
-              width: RWDWidth(42),
-              height: RWDHeight(35),
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              fontSize: RWDFontSize(24),
-            }}
-            onClick={handleMemberJoin}
-            disabled={!currentMember.username}
+          <Tooltip
+            open={checkMemberInclude() || (ID && ID === currentMember?.id)}
+            title={
+              ID === currentMember?.id
+                ? "連你自己都不認識嗎？ㄏㄚˋㄌㄚˋ"
+                : "already as member"
+            }
           >
-            +
-          </Button>
+            <RectButton
+              buttonTheme="#5A8EA4"
+              variant="solid"
+              style={{
+                width: RWDWidth(42),
+                height: RWDHeight(35),
+                fontSize: RWDFontSize(24),
+              }}
+              onClick={handleMemberJoin}
+              disabled={
+                !currentMember.email ||
+                (ID && ID === currentMember?.id) || //就是 create meet 的人
+                checkMemberInclude() // 框框中已經有這人了
+              }
+            >
+              +
+            </RectButton>
+          </Tooltip>
         </ConfigProvider>
       </div>
 
@@ -235,7 +315,7 @@ const Member = ({ setMeetData, Input, rawMember = [] }) => {
                 closable
                 onClose={handleMemberDelete(item)}
               >
-                {item.username}
+                {item.username ? item.username : item.email}
               </MemberTag>
             ))}
           </div>
@@ -243,10 +323,6 @@ const Member = ({ setMeetData, Input, rawMember = [] }) => {
       )}
     </div>
   );
-};
-
-const Test = () => {
-  return <div></div>;
 };
 
 export default Member;

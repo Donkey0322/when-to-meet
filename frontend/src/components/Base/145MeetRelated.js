@@ -175,162 +175,13 @@ Base.FullContainer = Object.assign(
             ${AvailabilityTitle}
           `,
           {
-            /**
-             * @example
-             * const VotingContainer = styled.div`
-                grid-column: 2/3;
-                grid-row: 3/4;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                max-width: ${RWDWidth(960)};
-                max-height: ${RWDHeight(700)};
-                overflow-x: auto;
-                &::-webkit-scrollbar {
-                  display: none;
-                }
-                -ms-overflow-style: none;
-                scrollbar-width: none;
-              `;
-            */
-            VotingContainer: Object.assign(
-              styled.div`
-                grid-column: 2/3;
-                grid-row: 3/4;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                max-width: ${RWDWidth(960)};
-                max-height: ${RWDHeight(700)};
-                overflow-x: auto;
-                &::-webkit-scrollbar {
-                  display: none;
-                }
-                -ms-overflow-style: none;
-                scrollbar-width: none;
-              `,
-              {
-                /**
-                 * @example
-                 * const DayContainer = styled.div`
-                    display: flex;
-                    max-width: 100%;
-                    position: relative;
-                    height: fit-content;
-                    flex-shrink: 0;
-                    column-gap: ${RWDWidth(5)};
-                    overflow-x: auto;
-                    &::-webkit-scrollbar {
-                      display: none;
-                    }
-                    -ms-overflow-style: none;
-                    scrollbar-width: none;
-                  `;
-                */
-                DayContainer: Object.assign(
-                  styled.div`
-                    display: flex;
-                    max-width: 100%;
-                    position: relative;
-                    height: fit-content;
-                    flex-shrink: 0;
-                    column-gap: ${RWDWidth(5)};
-                    overflow-x: auto;
-                    &::-webkit-scrollbar {
-                      display: none;
-                    }
-                    -ms-overflow-style: none;
-                    scrollbar-width: none;
-                  `,
-                  {
-                    /**
-                     * @example
-                     * const TimeContainer = styled.div`
-                        display: flex;
-                        align-items: center;
-                        justify-content: flex-end;
-                        width: ${RWDWidth(32)};
-                        height: fit-content;
-                        font-size: ${RWDFontSize(12)};
-                        align-self: flex-end;
-                        position: sticky;
-                        left: 0;
-                        padding-left: ${RWDWidth(20)};
-                        padding-top: ${RWDHeight(20)};
-                        background-color: white;
-                      `;
-                    */
-                    TimeContainer: styled.span`
-                      display: flex;
-                      align-items: center;
-                      justify-content: flex-end;
-                      width: ${RWDWidth(32)};
-                      height: fit-content;
-                      font-size: ${RWDFontSize(12)};
-                      align-self: flex-end;
-                      position: sticky;
-                      left: 0;
-                      padding-left: ${RWDWidth(20)};
-                      padding-top: ${RWDHeight(20)};
-                      background-color: white;
-                    `,
-                    /**
-                     * @example
-                     * const CellContainer = styled.div`
-                        width: ${RWDWidth(50)};
-                        font-size: ${RWDFontSize(14)};
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        flex-shrink: 0;
-                      `;
-                    */
-                    CellContainer: styled.div`
-                      width: ${RWDWidth(50)};
-                      font-size: ${RWDFontSize(14)};
-                      display: flex;
-                      flex-direction: column;
-                      align-items: center;
-                      flex-shrink: 0;
-                    `,
-                    /**
-                     * @example
-                     * const CellHoverContainer = styled.div`
-                        width: ${RWDWidth(165)};
-                        display: flex;
-                        justify-content: space-between;
-                        color: #000000;
-                      `;
-                    */
-                    CellHoverContainer: Object.assign(
-                      styled.div`
-                        width: 165px;
-                        display: flex;
-                        justify-content: space-between;
-                        color: #000000;
-                      `,
-                      {
-                        /**
-                         * @example
-                         * const CellHoverInfo = styled.div`
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            row-gap: ${RWDHeight(5)};
-                          `;
-                        */
-                        CellHoverInfo: styled.div`
-                          display: flex;
-                          flex-direction: column;
-                          align-items: center;
-                          row-gap: ${RWDHeight(5)};
-                        `,
-                      }
-                    ),
-                  }
-                ),
-              }
-            ),
+            VotingArea: styled.div`
+              grid-column: 2/3;
+              grid-row: 3/4;
+              width: 100%;
+              display: flex;
+              justify-content: center;
+            `,
           }
         ),
 
@@ -341,55 +192,14 @@ Base.FullContainer = Object.assign(
             ${AvailabilityTitle}
           `,
           {
-            VotingContainer: Object.assign(
-              styled.div`
-                display: grid;
-                grid-template-columns: min-content min-content;
-                grid-column: 1/2;
-                grid-row: 3/4;
-                grid-column-gap: ${RWDWidth(6)};
-                justify-content: center;
-                /* border: 1px solid #000000; */
-              `,
-              {
-                TimeContainer: styled.div`
-                  grid-column: 1/2;
-                  display: flex;
-                  flex-direction: column;
-                  font-size: ${RWDFontSize(12)};
-                  div {
-                    height: calc(${RWDHeight(5)} + ${RWDVmin(25)});
-                  }
-                `,
-                CellsContainer: Object.assign(
-                  styled.div`
-                    grid-column: 2/3;
-                    display: flex;
-                    column-gap: ${RWDWidth(5)};
-                    max-width: ${RWDWidth(880)};
-                    overflow-x: auto;
-                    &::-webkit-scrollbar {
-                      display: none;
-                    }
-                    -ms-overflow-style: none;
-                    scrollbar-width: none;
-                  `,
-                  {
-                    DayColumn: styled.div`
-                      display: flex;
-                      flex-shrink: 0;
-                      flex-direction: column;
-                      align-items: center;
-                      row-gap: ${RWDHeight(5)};
-                      div {
-                        font-size: ${RWDFontSize(14)};
-                        text-align: center;
-                      }
-                    `,
-                  }
-                ),
-              }
-            ),
+            VotingArea: styled.div`
+              grid-column: 1/2;
+              grid-row: 3/4;
+              width: 100%;
+              display: flex;
+              justify-content: center;
+              position: relative;
+            `,
           }
         ),
       }

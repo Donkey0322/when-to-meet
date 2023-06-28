@@ -1,17 +1,13 @@
-/*TODO:********************************************************************************************
-  1. RWD, 頁面縮過小時的錯誤
-**************************************************************************************************/
 import { Typography, Divider } from "antd";
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMeet } from "../hooks/useMeet";
-import { RWD } from "../../constant";
 import Base from "../../components/Base/orange3_white7";
 import Button from "../../components/Button";
 import Link from "../../components/Link";
 import Notification from "../../components/Notification";
-import * as AXIOS from "../../middleware";
+import { RWD } from "../../constant";
 const {
   RightContainer,
   RightContainer: { InfoContainer },
@@ -19,16 +15,21 @@ const {
 const GoogleButton = Button("google");
 const { RWDHeight, RWDFontSize } = RWD;
 
-const LogIn = () => {
+export default function Login() {
+  const search = useLocation().search;
+  const {
+    login,
+    GLOBAL_LOGIN,
+    setError,
+    MIDDLEWARE: { emailVerification, logIn },
+  } = useMeet();
+  const navigate = useNavigate();
   const [loginData, setLoginData] = useState({
     user_identifier: "",
     password: "",
   });
-  const search = useLocation().search;
-  const { login, GLOBAL_LOGIN, setError } = useMeet();
-  const { t } = useTranslation();
-  const navigate = useNavigate();
   const [notification, setNotification] = useState({});
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (login) {
@@ -38,32 +39,33 @@ const LogIn = () => {
     if (search) {
       const code = new URLSearchParams(search).get("code");
       if (code) {
-        AXIOS.emailVerification({ code });
+        emailVerification({ code });
       }
     }
   }, [login]);
 
-  const handleLoginClick = async () => {
+  const handleLoginClick = async (e) => {
     try {
-      console.log(loginData);
-      const { data, error } = await AXIOS.login(loginData);
-      if (error) {
-        switch (error) {
-          case "LoginFailed":
-            setNotification({ title: t("loginFailed"), message: "" });
-            break;
-          case "EmailRegisteredByGoogle":
-            setNotification({
-              title: t("loginFailed"),
-              message: t("linkedGoogle"),
-            });
-            break;
-          default:
-            break;
+      if (e?.key === "Enter" || !e.key) {
+        if (!loginData.user_identifier || !loginData.password) return;
+        const { data, error } = await logIn(loginData);
+        if (error) {
+          switch (error) {
+            case "LoginFailed":
+              setNotification({ title: t("loginFailed"), message: "" });
+              break;
+            case "EmailRegisteredByGoogle":
+              setNotification({
+                title: t("loginFailed"),
+                message: t("linkedGoogle"),
+              });
+              break;
+            default:
+              break;
+          }
+        } else {
+          GLOBAL_LOGIN(data.token);
         }
-      } else {
-        console.log(data);
-        GLOBAL_LOGIN(data.token);
       }
     } catch (error) {
       setError(error.message);
@@ -100,11 +102,13 @@ const LogIn = () => {
                 placeholder="Username/Email"
                 name="user_identifier"
                 onChange={handleLoginChange}
+                onKeyDown={handleLoginClick}
               />
               <InfoContainer.Password
                 placeholder="Password"
                 name="password"
                 onChange={handleLoginChange}
+                onKeyDown={handleLoginClick}
               />
             </InfoContainer.InputContainer>
             <InfoContainer.InputContainer
@@ -133,7 +137,6 @@ const LogIn = () => {
                   {t("forgot")}
                 </Link>
               </div>
-
               <InfoContainer.Button
                 disabled={!loginData.user_identifier || !loginData.password}
                 onClick={handleLoginClick}
@@ -176,6 +179,4 @@ const LogIn = () => {
       </Base>
     </>
   );
-};
-
-export default LogIn;
+}

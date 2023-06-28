@@ -16,7 +16,6 @@ class Request(metaclass=mcs.Singleton):
             return account
         raise exc.NoPermission
 
-
     @property
     def time(self) -> datetime:
         return self._context.get('time')

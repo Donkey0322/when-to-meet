@@ -6,7 +6,7 @@ from base import enums
 class Filter(NamedTuple):
     field: str
     op: enums.FilterOperator
-    value: Union[str, set, tuple]
+    value: Union[str, set, tuple, bool]
 
 
 class Sorter(NamedTuple):

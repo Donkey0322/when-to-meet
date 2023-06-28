@@ -1,6 +1,5 @@
 from fastapi import APIRouter, responses, Depends
 from pydantic import BaseModel
-from dataclasses import dataclass
 from middleware.headers import get_auth_token
 from middleware.envelope import enveloped
 from middleware.context import request
@@ -40,6 +39,7 @@ async def add_routine(data: Sequence[Routine]):
         routines=[(routine.weekday, routine.time_slot_id) for routine in data],
     )
 
+
 @router.delete('/routine')
 @enveloped
 async def delete_routine(data: Sequence[Routine]):
@@ -49,13 +49,14 @@ async def delete_routine(data: Sequence[Routine]):
         routines=[(routine.weekday, routine.time_slot_id) for routine in data],
     )
 
+
 @router.get('/routine')
 @enveloped
 async def get_routine():
     account_id = request.account.id
     routines = await db.routine.get(account_id=account_id)
 
-    routines.sort(key=lambda x: (weekdayValue[x.weekday], x.time_slot_id)) # sort by weekday (mon to sun) then sort by time_slot_id
+    routines.sort(key=lambda x: (weekdayValue[x.weekday], x.time_slot_id))
     return [Routine(weekday=routine.weekday, time_slot_id=routine.time_slot_id) for routine in routines]
     
     

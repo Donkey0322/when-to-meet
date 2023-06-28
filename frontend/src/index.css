@@ -59,6 +59,20 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+body .ant-picker-time-panel ::-webkit-scrollbar,
+html .ant-picker-time-panel ::-webkit-scrollbar {
+  width: 2px;
+}
+body .ant-picker-time-panel ::-webkit-scrollbar-thumb,
+html .ant-picker-time-panel ::-webkit-scrollbar-thumb {
+  background-color: #d8d8d8;
+  width: 1px;
+}
+body .ant-modal-content,
+html .ant-modal-content {
+  min-width: -moz-fit-content !important;
+  min-width: fit-content !important;
+}
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;

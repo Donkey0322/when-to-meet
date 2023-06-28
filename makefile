@@ -25,3 +25,6 @@ be:
 
 db:
 	docker exec -it sdm-database psql -U dev database
+
+test:
+	cd backend && python -m unittest -v

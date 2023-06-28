@@ -1,22 +1,23 @@
 import datetime
 import typing
-from typing import Tuple, Any, Optional
+from typing import Tuple, Optional
 
 import pydantic
 
 from base import model, enums
-from base.enums import FilterOperator, SortOrder
+from base.enums import FilterOperator
 import persistence.database as db
 import exceptions as exc  # noqa
 
 
 class MemberInfo(pydantic.BaseModel):
-    member_id: Optional[int]
+    account_id: Optional[int]
+    email: Optional[str]
     name: Optional[str]
 
 
 def timezone_validate(time: datetime.datetime) -> datetime.datetime:
-    converted = pydantic.datetime_parse.parse_datetime(time)
+    converted = pydantic.datetime_parse.parse_datetime(time)  # noqa
 
     if converted.tzinfo is not None:
         # Convert to server time
@@ -29,7 +30,8 @@ def time_to_time_slot(time: datetime.time) -> int:
     return time.hour * 2 + int(time.minute >= 30) + 1
 
 
-def parse_filter(column_types: dict[str, type], filters: typing.Optional[pydantic.Json] = None) -> typing.Sequence[model.Filter]:
+def parse_filter(column_types: dict[str, type], filters: typing.Optional[pydantic.Json] = None) \
+        -> typing.Sequence[model.Filter]:
     filters: list[model.Filter] = pydantic.parse_obj_as(list[model.Filter], filters or [])
     for i, filter_ in enumerate(filters):
         try:
@@ -81,17 +83,24 @@ MEET_STATUS_MAPPING = {
 
 
 async def update_status(meet_id: int, meet, now: datetime.datetime, account_id: int = None) -> str:
+    if meet.status is enums.StatusType.confirmed:
+        return MEET_STATUS_MAPPING[meet.status]
+    try:
+        member = await db.meet_member.read(meet_id=meet_id, account_id=account_id)
+    except exc.NotFound:
+        member = None
     if meet.voting_end_time and now <= meet.voting_end_time:
-        if await db.meet.has_voted(meet_id, account_id):
+        if member and member.has_voted:
             meet.status = enums.StatusType.voted
         else:
             meet.status = enums.StatusType.voting
     elif meet.voting_end_time and now > meet.voting_end_time and meet.status is enums.StatusType.voting:
         await db.meet.update_status(meet_id, enums.StatusType.waiting_for_confirm)
         meet.status = enums.StatusType.waiting_for_confirm
-    if account_id and meet.status is enums.StatusType.waiting_for_confirm and await db.meet.is_authed(meet_id=meet_id,
-                                                                                                      member_id=account_id,
-                                                                                                      only_host=True):
+    elif member and member.has_voted:
+        meet.status = enums.StatusType.voted
+    if account_id and meet.status is enums.StatusType.waiting_for_confirm \
+            and await db.meet.is_authed(meet_id=meet_id, member_id=account_id, only_host=True):
         meet.status = enums.StatusType.need_confirm
     return MEET_STATUS_MAPPING[meet.status]
 
@@ -101,11 +110,14 @@ async def compose_host_and_member_info(meet_id: int) -> Tuple[MemberInfo, typing
     host = None
     member_infos = []
     for (id_, name), v in member_auth.items():
+        email = None
         if not name:
-            name = (await db.account.read(account_id=id_)).username
+            account = await db.account.read(account_id=id_)
+            name = account.username
+            email = account.email
         if v:
-            host = MemberInfo(member_id=id_, name=name)
+            host = MemberInfo(account_id=id_, name=name, email=email)
         else:
-            member_infos.append(MemberInfo(member_id=id_, name=name))
+            member_infos.append(MemberInfo(account_id=id_, name=name, email=email))
 
     return host, member_infos

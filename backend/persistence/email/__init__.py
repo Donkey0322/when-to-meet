@@ -62,6 +62,9 @@ class SMTPHandler(metaclass=mcs.Singleton):
 smtp_handler = SMTPHandler()
 
 from . import (
+    event_reminding,
     verification,
     forget_password,
+    invite_to_meet,
+    voting_notification,
 )

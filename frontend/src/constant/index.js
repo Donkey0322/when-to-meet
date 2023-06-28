@@ -1,1 +1,1 @@
-export { default as theme, COLORS, SIZES, FONTS, RWD, ANIME } from "./theme";
+export { default as theme, COLORS, RWD, ANIME, PAGE_TRANSITION } from "./theme";

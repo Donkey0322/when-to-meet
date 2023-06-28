@@ -15,4 +15,5 @@ async def catch_exceptions_middleware(request: Request, call_next):
                 },
                 status_code=200)
         else:
+            print(e)
             return responses.Response("Internal Server Error", status_code=500)

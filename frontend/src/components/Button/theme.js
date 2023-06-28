@@ -56,6 +56,20 @@ export default {
         color: "#FFFFFF",
       },
     },
+    "#FFA601": {
+      default: {
+        backgroundColor: "#FFA601",
+        color: "#FFFFFF",
+      },
+      hover: {
+        backgroundColor: "#FFD466",
+        color: "#FFFFFF",
+      },
+      active: {
+        backgroundColor: "#935000",
+        color: "#FFFFFF",
+      },
+    },
   },
   hollow: {
     "#FFA601": {
@@ -177,15 +191,32 @@ export default {
         border: "#D6F7F6",
       },
     },
+    long: {
+      default: {
+        backgroundColor: "#FFFFFF",
+        color: "#000000",
+        border: "#808080",
+      },
+      hover: {
+        backgroundColor: "#FFFFFF",
+        color: "#DB8600",
+        border: "#DB8600",
+      },
+      active: {
+        backgroundColor: "#FFFFFF",
+        color: "#FFF4CC",
+        border: "#FFF4CC",
+      },
+    },
   },
-  round: {
+  text: {
     "#D8D8D8": {
       default: {
-        backgroundColor: "none",
+        backgroundColor: "transparent",
         color: "#D8D8D8",
       },
       hover: {
-        backgroundColor: "none",
+        backgroundColor: "transparent",
         color: "#808080",
       },
       active: {

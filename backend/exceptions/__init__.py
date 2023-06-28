@@ -60,3 +60,9 @@ class EmailRegisteredByGoogle(NormalException):
     """
     User has already used the email for Google login
     """
+
+
+class LineAccountNotConnected(NormalException):
+    """
+    User hasn't connect line account to let's meet account
+    """

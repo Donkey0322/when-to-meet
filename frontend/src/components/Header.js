@@ -52,7 +52,11 @@ const URLContainer = styled.div`
  * @param   {boolean} prop.show.login login 狀態
  */
 const Header = (prop) => {
-  const { removeCookie, setLogin } = useMeet();
+  const {
+    removeCookie,
+    setLogin,
+    USERINFO: { username },
+  } = useMeet();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const ref = useRef(); //追蹤 header 們距離有無太擠
@@ -68,7 +72,12 @@ const Header = (prop) => {
       name: t("meets"),
       //login 是 undefined 則不顯示按鈕
       to: "/meets",
-      regex: [/^\/meets$/, /^\/voting\/.*$/, /^\/meets\/.*$/],
+      regex: [
+        /^\/meets$/,
+        /^\/voting\/.*$/,
+        /^\/meets\/.*$/,
+        /^\/confirm\/.*$/,
+      ],
     },
     { name: t("calendar"), to: "/calendar", regex: [/^\/calendar$/] },
     {
@@ -116,7 +125,7 @@ const Header = (prop) => {
         style={{
           display: "flex",
           alignItems: "center",
-          width: adjusted ? "65vw" : "35vw",
+          width: RWDWidth(adjusted ? 1248 : 672),
           height: "100%",
         }}
       >
@@ -129,6 +138,7 @@ const Header = (prop) => {
               width: "calc(100% * 10 / 35)",
               height: "100%",
               cursor: "pointer",
+              zIndex: 2,
               backgroundColor: "#ffffff",
             }}
             onClick={() => {
@@ -187,14 +197,17 @@ const Header = (prop) => {
                 type="link"
                 style={{
                   fontSize: "2.2vmin",
-                  color: "#808080",
+                  color: pathname === "/settings" ? "#DB8600" : "#808080",
                   height: "100%",
                   fontWeight: 600,
                   padding: 0,
                   border: 0,
                 }}
+                onClick={() => {
+                  navigate("/settings");
+                }}
               >
-                {t("settings")}
+                {username}
               </Button>
               <Button
                 type="link"
@@ -209,6 +222,7 @@ const Header = (prop) => {
                 onClick={() => {
                   removeCookie("token");
                   setLogin(false);
+                  navigate("/");
                 }}
               />
             </>

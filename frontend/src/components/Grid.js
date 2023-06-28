@@ -1,13 +1,10 @@
-/*TODO:********************************************************************************************
-  1.Grid, line-name 可以設定成 header start /end 和 footer start / end。
-**************************************************************************************************/
 import Backdrop from "@mui/material/Backdrop";
 import _ from "lodash";
 import React from "react";
 import styled from "styled-components";
+import Title from "./Title";
 import { useMeet } from "../containers/hooks/useMeet";
 import { ANIME, RWD } from "../constant";
-import Title from "./Title";
 const { RWDVmin } = RWD;
 
 const GridContainer = styled.div`
@@ -15,6 +12,7 @@ const GridContainer = styled.div`
   position: relative;
   grid-template-columns: ${({ gridColumn }) => gridColumn};
   grid-template-rows: ${({ gridRow }) => gridRow};
+  width: 100%;
 `;
 
 const Loading = styled.div`
@@ -38,7 +36,7 @@ const Grid = (prop) => {
     (!column.find((e) => typeof e === "string") && _.sum(column) !== 100) ||
     (!row.find((e) => typeof e === "string") && _.sum(row) !== 100)
   ) {
-    throw new Error("請填入正確數字，加起來要100");
+    throw new Error("請填入正確數字，加起來要 100");
   }
   const gridColumn =
     column.reduce((acc, curr, index) => {

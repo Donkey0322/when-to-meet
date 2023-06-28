@@ -1,4 +1,5 @@
 import { Typography, ConfigProvider } from "antd";
+import { useState, useEffect } from "react";
 
 const LINKTHEME = {
   "#DB8600": {
@@ -8,8 +9,13 @@ const LINKTHEME = {
   },
   "#808080": {
     default: "#808080",
-    hover: "#808080",
-    active: "#808080",
+    hover: "#D8D8D8",
+    active: "#575757",
+  },
+  "#5C9B6B": {
+    default: "#5C9B6B",
+    hover: "#5C9B6B",
+    active: "#5C9B6B",
   },
 };
 
@@ -21,6 +27,16 @@ const Link = ({ linkTheme, ...prop }) => {
       )}`
     );
   }
+  const [theme, setTheme] = useState({ default: "", hover: "", active: "" });
+
+  useEffect(() => {
+    setTheme({
+      default: LINKTHEME[linkTheme].default,
+      hover: LINKTHEME[linkTheme].hover,
+      active: LINKTHEME[linkTheme].active,
+    });
+  }, [linkTheme]);
+
   return (
     <ConfigProvider
       theme={{
@@ -28,9 +44,9 @@ const Link = ({ linkTheme, ...prop }) => {
           Typography: {
             controlTmpOutline: "rgba(0, 0, 0, 0)",
             controlOutline: "rgba(0, 0, 0, 0)",
-            colorLink: LINKTHEME[linkTheme].default,
-            colorLinkHover: LINKTHEME[linkTheme].hover,
-            colorLinkActive: LINKTHEME[linkTheme].active,
+            colorLink: theme.default,
+            colorLinkHover: theme.hover,
+            colorLinkActive: theme.active,
           },
         },
       }}

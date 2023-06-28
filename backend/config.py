@@ -1,5 +1,4 @@
 from distutils.util import strtobool
-import enum
 from datetime import timedelta
 import os
 from dotenv import dotenv_values
@@ -61,6 +60,15 @@ class SessionConfig:
     SESSION_KEY = env_values.get('SESSION_KEY')
 
 
+class LineConfig:
+    message_access_token = env_values.get('LINE_MESSAGE_ACCESS_TOKEN')
+    message_secret = env_values.get('LINE_MESSAGE_SECRET')
+    login_client_id = env_values.get('LINE_LOGIN_CLIENT_ID')
+    login_secret = env_values.get('LINE_LOGIN_SECRET')
+    login_redirect_uri = env_values.get('LINE_LOGIN_REDIRECT_URI')
+    line_bot_url = env_values.get('LINE_BOT_URL')
+
+
 db_config = DBConfig()
 app_config = AppConfig()
 jwt_config = JWTConfig()
@@ -68,3 +76,4 @@ smtp_config = SMTPConfig()
 service_config = ServiceConfig()
 google_config = GoogleConfig()
 session_config = SessionConfig()
+line_config = LineConfig()

@@ -8,3 +8,4 @@ package.json
 yarn.lock
 .idea/
 db_data/
+frontend/yarn.lock

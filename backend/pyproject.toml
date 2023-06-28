@@ -24,7 +24,10 @@ python-multipart = "^0.0.5"
 aiosmtplib = "^2.0.1"
 Authlib = "^1.2.0"
 starlette-session = "^0.4.3"
-httpx = "^0.23.3"
+pytest = "^7.3.1"
+httpx = "^0.24.1"
+unittest = "^0.0"
+pytest-asyncio = "^0.21.0"
 
 
 [build-system]

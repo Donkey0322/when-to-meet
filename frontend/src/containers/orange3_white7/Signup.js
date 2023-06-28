@@ -1,27 +1,30 @@
 /*TODO:********************************************************************************************
   1. RWD, 頁面縮過小時的錯誤
 **************************************************************************************************/
-import React, { useState, useEffect } from "react";
-import { Divider, Typography } from "antd";
+import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import { Divider, Typography, Form } from "antd";
+import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import * as AXIOS from "../../middleware";
-import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
-import Button from "../../components/Button";
+import { useMeet } from "../hooks/useMeet";
 import Base from "../../components/Base/orange3_white7";
-import { RWD, ANIME } from "../../constant";
-import { useTranslation } from "react-i18next";
+import Button from "../../components/Button";
+import Link from "../../components/Link";
 import Notification from "../../components/Notification";
+import { RWD, ANIME } from "../../constant";
+
 const {
   RightContainer,
   RightContainer: { InfoContainer },
 } = Base;
 const GoogleButton = Button("google");
 const { RWDWidth, RWDHeight, RWDFontSize } = RWD;
-const { Text, Link } = Typography;
 
 const CheckCircle = styled(CheckCircleOutlined)`
   color: #5c9b6b;
+  position: absolute;
+  left: 105%;
   font-size: ${RWDFontSize(20)};
   ${ANIME.FadeIn};
 `;
@@ -29,20 +32,25 @@ const CheckCircle = styled(CheckCircleOutlined)`
 const CloseCircle = styled(CloseCircleOutlined)`
   color: #ae2a39;
   font-size: ${RWDFontSize(20)};
+  position: absolute;
+  left: 105%;
   ${ANIME.FadeIn};
 `;
 
 const SignUp = () => {
-  const { t } = useTranslation();
+  const {
+    setLoading,
+    MIDDLEWARE: { signUp },
+  } = useMeet();
+  const navigate = useNavigate();
+  const [notification, setNotification] = useState({});
   const [signupData, setSignupData] = useState({
     Email: "",
     Username: "",
     Password: "",
     "Confirm Password": "",
   });
-  const [notification, setNotification] = useState({});
-  const [validName, setValidName] = useState(true);
-  const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const CONTENTNAME = {
     Email: t("email"),
@@ -57,23 +65,17 @@ const SignUp = () => {
       ...prev,
       [name]: value,
     }));
-    if (name === "Username") {
-      if (/[#$%&\*\\\/]/.test(value)) {
-        setValidName(false);
-        console.log("bad");
-      } else {
-        setValidName(true);
-      }
-    }
   };
 
   const handleSignUpClick = async () => {
     try {
-      const { error } = await AXIOS.signup({
+      setLoading(true);
+      const { error } = await signUp({
         username: signupData.Username,
         password: signupData.Password,
         email: signupData.Email,
       });
+      setLoading(false);
       if (error) {
         switch (error) {
           case "UsernameExists":
@@ -119,7 +121,51 @@ const SignUp = () => {
                   const Component = m.includes("Password")
                     ? InfoContainer.Password
                     : InfoContainer.Input;
-                  return (
+                  return m.includes("name") ? (
+                    <Form.Item
+                      name="username"
+                      rules={[
+                        {
+                          pattern: /^[^#$%&*/?@]*$/,
+                          validateTrigger: "onChange",
+                          message: "Please avoid `#$%&*/?@",
+                        },
+                        {
+                          pattern: /^(?!guest_).*/,
+                          validateTrigger: "onChange",
+                          message: "Please avoid using guest_ as prefix.",
+                        },
+                      ]}
+                      style={{ margin: 0 }}
+                    >
+                      <Component
+                        placeholder={CONTENTNAME[m]}
+                        name={m}
+                        onChange={handleSignupChange}
+                        key={index}
+                      />
+                    </Form.Item>
+                  ) : m === "Password" ? (
+                    <Form.Item
+                      name={"Password"}
+                      rules={[
+                        {
+                          min: 8,
+                          validateTrigger: "onChange",
+                          message:
+                            "Password should contain at least 8 characters.",
+                        },
+                      ]}
+                      style={{ margin: 0 }}
+                    >
+                      <Component
+                        placeholder={CONTENTNAME[m]}
+                        name={m}
+                        onChange={handleSignupChange}
+                        key={index}
+                      />
+                    </Form.Item>
+                  ) : (
                     <Component
                       placeholder={CONTENTNAME[m]}
                       name={m}
@@ -133,6 +179,7 @@ const SignUp = () => {
                   display: "flex",
                   alignItems: "center",
                   columnGap: RWDWidth(10),
+                  position: "relative",
                 }}
               >
                 <InfoContainer.Password
@@ -162,10 +209,12 @@ const SignUp = () => {
               <InfoContainer.Button
                 disabled={
                   !signupData.Username ||
-                  !signupData.Password ||
+                  !signupData.Password >= 8 ||
                   !signupData.Email ||
                   !signupData["Confirm Password"] ||
-                  signupData.Password !== signupData["Confirm Password"]
+                  signupData.Password !== signupData["Confirm Password"] ||
+                  !/^[^#$%&*/?@]*$/.test(signupData.Username) ||
+                  !/^(?!guest_).*/.test(signupData.Username)
                 }
                 onClick={handleSignUpClick}
               >
@@ -185,18 +234,20 @@ const SignUp = () => {
                 justifyContent: "center",
               }}
             >
-              <Text type="secondary">
-                {t("already")}
+              <Typography.Text type="secondary">
+                {t("already") + " "}
                 <Link
                   onClick={() => {
                     navigate("/login");
                   }}
-                  style={{ color: "#B76A00", fontSize: RWDFontSize(16) }}
+                  style={{
+                    fontSize: RWDFontSize(16),
+                  }}
+                  linkTheme="#DB8600"
                 >
-                  {" "}
                   {t("login")}
                 </Link>
-              </Text>
+              </Typography.Text>
             </InfoContainer.InputContainer>
           </RightContainer.InfoContainer>
         </Base.RightContainer>

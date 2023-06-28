@@ -10,85 +10,15 @@ export const COLORS = {
   },
 };
 
-export const SIZES = {
-  RWDWidth: (width) => `calc(100vw * ${width} / 1080)`,
-  base: 8,
-  font: 14,
-  radius: 12,
-  padding: 24,
-
-  // Font sizes
-  superlargeTitle: 52,
-  largeTitle: 44,
-  mediumTitle: 38,
-  h1: 30,
-  h2: 22,
-  h3: 16,
-  h4: 14,
-  body1: 30,
-  body2: 22,
-  body3: 16,
-  body4: 14,
-};
-
-export const FONTS = {
-  main: { fontFamily: "Nunito" },
-  // superlargeTitle: {
-  //   fontFamily: "Roboto-Black",
-  //   fontSize: SIZES.superlargeTitle,
-  //   lineHeight: 55,
-  // },
-  // largeTitle: {
-  //   fontFamily: "Roboto-Black",
-  //   fontSize: SIZES.largeTitle,
-  //   lineHeight: 55,
-  // },
-  // mediumTitle: {
-  //   fontFamily: "Roboto-Black",
-  //   fontSize: SIZES.mediumTitle,
-  //   lineHeight: 55,
-  // },
-  // h1: { fontFamily: "Roboto-Black", fontSize: SIZES.h1, lineHeight: 50 },
-  // h2: { fontFamily: "Roboto-Bold", fontSize: SIZES.h2, lineHeight: 30 },
-  // h3: { fontFamily: "Roboto-Bold", fontSize: SIZES.h3, lineHeight: 22 },
-  // h4: { fontFamily: "Roboto-Regular", fontSize: SIZES.h4, lineHeight: 22 },
-  // body1: {
-  //   fontFamily: "Roboto-Regular",
-  //   fontSize: SIZES.body1,
-  //   lineHeight: 36,
-  // },
-  // body2: {
-  //   fontFamily: "Roboto-Regular",
-  //   fontSize: SIZES.body2,
-  //   lineHeight: 30,
-  // },
-  // body3: {
-  //   fontFamily: "Roboto-Regular",
-  //   fontSize: SIZES.body3,
-  //   lineHeight: 22,
-  // },
-  // body4: {
-  //   fontFamily: "Roboto-Regular",
-  //   fontSize: SIZES.body4,
-  //   lineHeight: 22,
-  // },
-  // image: {
-  //   // flex: 1,
-  //   width: 98,
-  //   height: 98,
-  //   borderRadius: 20,
-  //   borderWidth: 0.4,
-  //   justifyContent: "center",
-  //   alignItems: "center",
-  // },
-};
-
 export const RWD = {
   /**
    * @param {number} width px unit in Figma
    * @return {String}      calc(100vw * ${width} / 1920)
    */
-  RWDWidth: (width) => `calc(100vw * ${width} / 1920)`,
+  RWDWidth: (width) =>
+    `max(calc(100vw * ${width} / 1920), calc(${
+      document.querySelector("body").offsetWidth
+    }px * ${width} / 1920))`,
   /**
    * @param {number} height px unit in Figma
    * @return {String}       calc(100vh * ${height} / 1080)
@@ -126,16 +56,64 @@ export const ANIME = {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     `};
+    animation-duration: 2s;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+  `,
+  Float: css`
+    animation-name: ${keyframes`
+      0% { transform: translate(0,  0px); }
+      50% { transform: translate(0, -8px); }
+      100% { transform: translate(0, -0px); }
+    `};
+    animation-duration: 2s;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+  `,
+  SlideFromTop: css`
+    animation-name: ${keyframes`
+      from { transform: translate(0, -100px); }
+      to { transform: translate(0,  0px); }
+    `};
+    animation-duration: 0.5s;
+    animation-iteration-count: 1;
+    animation-timing-function: ease-in-out;
+  `,
+  ChangeColor: (from = "#000000", to = "red") => css`
+    animation-name: ${keyframes`
+      0% { color: ${from}; }
+      50% { color: ${to}; }
+      100% { color: ${from}; }
+    `};
     animation-duration: 1s;
     animation-iteration-count: infinite;
     animation-timing-function: linear;
   `,
 };
 
+export const PAGE_TRANSITION = {
+  RightSlideIn: {
+    initial: { x: window.innerWidth * 2 },
+    animate: { x: 0, transition: { duration: 0.15 } },
+    exit: { x: window.innerWidth * 2 },
+  },
+  FadeIn: {
+    initial: { opacity: 0, scale: 0.5 },
+    animate: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.5,
+        delay: 0.5,
+        ease: [0, 0.71, 0.2, 1.01],
+      },
+    },
+  },
+};
+
 export default {
   COLORS,
-  SIZES,
-  FONTS,
   RWD,
   ANIME,
+  PAGE_TRANSITION,
 };

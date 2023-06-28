@@ -33,10 +33,10 @@ class Meet:
     end_date: date
     start_time_slot_id: int
     end_time_slot_id: int
-    voting_end_time: datetime
     title: str
     invite_code: str
     gen_meet_url: bool
+    voting_end_time: Optional[datetime] = None
     finalized_start_date: Optional[date] = None
     finalized_end_date: Optional[date] = None
     finalized_start_time_slot_id: Optional[int] = None
@@ -50,6 +50,7 @@ class MeetMember:
     id: int
     meet_id: int
     is_host: bool
+    has_voted: bool
     name: Optional[str] = None
     member_id: Optional[int] = None
 
@@ -80,3 +81,20 @@ class S3File:
     uuid: UUID
     key: str
     bucket: str
+
+
+@dataclass
+class AccountMail:
+    username: str
+    email: str
+
+
+@dataclass
+class MeetAndAccountPreference:
+    meet_title: str
+    username: str
+    email: str
+    time: time
+    meet_code: str
+    line_token: str
+    notification_preference: enums.NotificationPreference

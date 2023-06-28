@@ -3,75 +3,41 @@
 **************************************************************************************************/
 import { motion } from "framer-motion";
 import _ from "lodash";
-import Moment from "moment";
-import { extendMoment } from "moment-range";
-import { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ScrollSync, ScrollSyncPane } from "react-scroll-sync";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { ScrollSync } from "react-scroll-sync";
+import Error from "./Error";
 import { useMeet } from "./hooks/useMeet";
-import { RWD, COLORS } from "../constant";
 import Base from "../components/Base/145MeetRelated";
 import Button from "../components/Button";
-import TimeCell, { slotIDProcessing } from "../components/TimeCell";
-import { useTranslation } from "react-i18next";
-import {
-  getGroupAvailability,
-  getMyAvailability,
-  addMyAvailability,
-  deleteMyAvailability,
-  meet,
-  getRoutine,
-} from "../middleware";
-const getMeetInfo = meet("read");
-const BackButton = Button("back");
+import Modal from "../components/Modal";
+import Vote from "../components/Vote";
+import TimeCell from "../components/TimeCell";
+import { RWD, COLORS, PAGE_TRANSITION } from "../constant";
 const { ContentContainer } = Base.FullContainer;
-const {
-  GroupAvailability: {
-    VotingContainer: {
-      DayContainer: { CellHoverContainer },
-    },
-  },
-} = ContentContainer;
+const BackButton = Button("back");
+const PillButton = Button("pill");
+const InfoTooltip = Modal("info");
 const { RWDWidth } = RWD;
 const DraggableCell = TimeCell("draggable");
 const InfoCell = TimeCell("info");
-const moment = extendMoment(Moment);
-
-const xOffset = 100;
-const variants = {
-  enter: (direction) => ({
-    x: direction > 0 ? xOffset : -xOffset,
-    opacity: 0,
-  }),
-  active: {
-    x: 0,
-    opacity: 1,
-    transition: { delay: 0.2 },
-  },
-  exit: (direction) => ({
-    x: direction > 0 ? -xOffset : xOffset,
-    opacity: 0,
-  }),
-};
+const VoteOverflowX = Vote(["x"]);
 
 const Voting = () => {
   const [title, setTitle] = useState("");
   const [DATERANGE, setDATERANGE] = useState([]);
   const [TIMESLOTIDS, setTIMESLOTIDS] = useState([]);
-  const [VOTINGINFO, setVOTINGINFO] = useState([]);
+  const [groupAvailabilityInfo, setGroupAvailabilityInfo] = useState([]);
   const [CELLCOLOR, setCELLCOLOR] = useState([]);
   const [ROUTINE, setROUTINE] = useState("");
-
-  /*調整 time gap 套組*/
-  const WeekdayRef = useRef(null); //追蹤天數高度
-  const TimeCellRef = useRef(null); //追蹤 TimeCell 高度
-  const TimeRef = useRef(null);
-  const [timeTop, setTimeTop] = useState(0);
-  /******************************************************/
+  const [undo, setUndo] = useState([]);
+  const [redo, setRedo] = useState([]);
+  const [initialCell, setInitialCell] = useState([]);
 
   /*可拖曳 time cell 套組*/
   const [cell, setCell] = useState([]);
-
+  const [block, setBlock] = useState(false);
   const [startDrag, setStartDrag] = useState(false); //啟動拖曳事件
   const [startIndex, setStartIndex] = useState([]); //選取方塊位置
   const oriCell = useMemo(() => cell, [startDrag]);
@@ -83,33 +49,50 @@ const Voting = () => {
     startDrag,
     setStartDrag,
     startIndex,
+    block,
+    setBlock,
     setStartIndex,
     mode,
     setMode,
     setUpdatedCell,
     oriCell,
-    setVOTINGINFO,
   };
   /******************************************************/
 
   const { code } = useParams();
-  const { cookies, login, setLoading } = useMeet();
+  const {
+    login,
+    loading,
+    setLoading,
+    MIDDLEWARE: {
+      getGroupAvailability,
+      getMyAvailability,
+      addMyAvailability,
+      deleteMyAvailability,
+      getMeetInfo,
+      getRoutine,
+    },
+    moment: { Moment, moment },
+  } = useMeet();
+
+  const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   const handleMeetInfo = async () => {
     try {
       setLoading(true);
-      const { data: votingData } = await getGroupAvailability(
-        code,
-        cookies.token
-      );
-      setVOTINGINFO(votingData.data);
+      const { data: votingData } = await getGroupAvailability(code);
+      setGroupAvailabilityInfo(votingData.data);
 
-      const { data: routine } = await getRoutine(undefined, cookies.token);
-      setROUTINE(routine);
+      if (login) {
+        const { data: routine } = await getRoutine();
+        setROUTINE(routine);
+      } else {
+        setROUTINE([]);
+      }
 
-      const { data } = await getMeetInfo(code, cookies.token);
+      const { data } = await getMeetInfo(code);
       setTitle(data.meet_name);
       setDATERANGE(
         [
@@ -121,75 +104,90 @@ const Voting = () => {
       setTIMESLOTIDS(
         _.range(data.start_time_slot_id, data.end_time_slot_id + +2)
       );
-    } catch (error) {
-      console.log(error);
-    }
+    } catch (error) {}
   };
 
   useEffect(() => {
     (async () => {
       if (DATERANGE.length && TIMESLOTIDS.length && ROUTINE) {
-        const { data: myAvailability } = await getMyAvailability(
+        const { data: myAvailability, error } = await getMyAvailability(
           code,
-          cookies.token
+          location?.state?.guestName,
+          location?.state?.guestPassword
         );
-        setCell(
-          DATERANGE.map((w) =>
-            TIMESLOTIDS.map((t) =>
-              myAvailability.find((d) => d.date === w && d.time_slot_id === t)
-                ? true
-                : ROUTINE.find(
-                    (r) =>
-                      r.weekday === moment(w).format("ddd").toUpperCase() &&
-                      r.time_slot_id === t
-                  )
-                ? null
-                : false
-            )
+        if (error) {
+          setError(error);
+          setExist(false);
+          return;
+        }
+        const temp = DATERANGE.map((w) =>
+          TIMESLOTIDS.map((t) =>
+            myAvailability.find((d) => d.date === w && d.time_slot_id === t)
+              ? true
+              : ROUTINE.find(
+                  (r) =>
+                    r.weekday === Moment(w).format("ddd").toUpperCase() &&
+                    r.time_slot_id === t
+                )
+              ? null
+              : false
           )
         );
+        setInitialCell(temp);
+        setCell(temp);
         setLoading(false);
       }
     })();
   }, [DATERANGE, TIMESLOTIDS]);
 
   useEffect(() => {
-    if (code) {
-      handleMeetInfo();
-    }
-  }, [code]);
-
-  useEffect(() => {
-    if (VOTINGINFO.length) {
+    if (groupAvailabilityInfo.length) {
       const allMembersNum =
-        VOTINGINFO?.[0]?.available_members.length +
-        VOTINGINFO?.[0]?.unavailable_members.length;
+        groupAvailabilityInfo?.[0]?.available_members.length +
+        groupAvailabilityInfo?.[0]?.unavailable_members.length;
       const gap =
         Math.floor(allMembersNum / 5) < 1 ? 1 : Math.floor(allMembersNum / 5);
       setCELLCOLOR(
-        VOTINGINFO.map(
+        groupAvailabilityInfo.map(
           (v) => COLORS.orange[Math.ceil(v.available_members.length / gap)]
         )
       );
     }
-  }, [VOTINGINFO]); //設定 time cell 顏色
+  }, [groupAvailabilityInfo]); //設定 time cell 顏色
 
-  const throttledHandleResize = _.throttle(() => {
-    if (WeekdayRef?.current) {
-      setTimeTop(WeekdayRef.current.offsetHeight);
-    }
-  }, 100);
+  /*檢驗身分*/
+  const [exist, setExist] = useState(undefined); // meet是否存在
+  const {
+    USERINFO: { ID },
+    error,
+    setError,
+  } = useMeet();
 
   useEffect(() => {
-    if (WeekdayRef?.current) {
-      setTimeTop(WeekdayRef.current.offsetHeight);
-    } //load 時
+    (async () => {
+      if (code && exist) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        await handleMeetInfo();
+        setLoading(false);
+      }
+    })();
+  }, [code, ID, exist]);
 
-    window.addEventListener("resize", throttledHandleResize);
-    return () => {
-      window.removeEventListener("resize", throttledHandleResize);
-    };
-  }, [cell]);
+  useEffect(() => {
+    (async () => {
+      if (exist === undefined) {
+        const { error } = await getMeetInfo(code);
+        if (error) {
+          setError(error);
+          setExist(false);
+          return;
+        }
+        setError("");
+        setExist(true);
+      }
+    })();
+  }, []);
+  /******************************************************/
 
   const handleCellMouseUp = async (e) => {
     e.preventDefault();
@@ -199,327 +197,255 @@ const Voting = () => {
       }
       setStartDrag(false);
       const API = mode ? addMyAvailability : deleteMyAvailability;
-      await API(
-        code,
+      setUndo((prev) => [
         {
-          time_slots: updatedCell.map((u) => ({
-            date: DATERANGE[u[0]],
-            time_slot_id: u[1] + 1,
-          })),
+          api: mode ? "add" : "delete",
+          data: {
+            time_slots: updatedCell.map((u) => ({
+              date: DATERANGE[u[0]],
+              time_slot_id: TIMESLOTIDS[u[1]],
+            })),
+            name: location?.state?.guestName ?? null,
+            password: location?.state?.guestPassword ?? null,
+          },
         },
-        cookies.token
-      );
-      const { data: votingData } = await getGroupAvailability(
-        code,
-        cookies.token
-      );
-      setVOTINGINFO(votingData.data);
+        ...prev,
+      ]);
+      await API(code, {
+        time_slots: updatedCell.map((u) => ({
+          date: DATERANGE[u[0]],
+          time_slot_id: TIMESLOTIDS[u[1]],
+        })),
+        name: location?.state?.guestName ?? null,
+        password: location?.state?.guestPassword ?? null,
+      });
+      const { data: votingData } = await getGroupAvailability(code);
+      setGroupAvailabilityInfo(votingData.data);
     } catch (error) {
       throw error;
     } finally {
       setUpdatedCell("");
     }
   };
-  console.log(window.innerWidth);
-  return (
-    <ScrollSync>
-      <motion.div
-        initial={{ x: 1000 }}
-        animate={{ x: 0 }}
-        transition={{ duration: 0.5, type: "spring" }}
-      >
-        <Base login={login} onMouseUp={handleCellMouseUp}>
-          <Base.FullContainer>
-            {cell.length > 0 && (
-              <Base.FullContainer.ContentContainer>
-                <ContentContainer.Title>
-                  <BackButton
-                    style={{
-                      position: "absolute",
-                      right: "100%",
-                      marginRight: RWDWidth(30),
-                    }}
-                    onClick={() => {
-                      navigate(`/meets/${code}`);
-                    }}
-                  ></BackButton>
-                  {title}
-                </ContentContainer.Title>
-                <ContentContainer.MyAvailability>
-                  {t("myAva")}
-                </ContentContainer.MyAvailability>
-                <ContentContainer.GroupAvailability>
-                  {t("groupAva")}
-                </ContentContainer.GroupAvailability>
-                <ContentContainer.MyAvailability.VotingContainer>
-                  <ContentContainer.MyAvailability.VotingContainer.TimeContainer
-                    style={{
-                      marginTop: `${timeTop - 3}px`,
-                    }}
-                  >
-                    {TIMESLOTIDS.map((m, index) => (
-                      <div ref={TimeRef} key={index}>
-                        {slotIDProcessing(m)}
-                      </div>
-                    ))}
-                  </ContentContainer.MyAvailability.VotingContainer.TimeContainer>
-                  <ScrollSyncPane>
-                    <ContentContainer.MyAvailability.VotingContainer.CellsContainer>
-                      {DATERANGE.map((m, d_index) => (
-                        <ContentContainer.MyAvailability.VotingContainer.CellsContainer.DayColumn
-                          key={d_index}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                            }}
-                            ref={WeekdayRef}
-                          >
-                            <div style={{ userSelect: "none" }}>
-                              {moment(m).format("MMM D")}
-                            </div>
-                            <div
-                              style={{ userSelect: "none", fontWeight: "700" }}
-                            >
-                              {moment(m).format("ddd")}
-                            </div>
-                          </div>
-                          {TIMESLOTIDS.map(
-                            (_, t_index) =>
-                              t_index !== TIMESLOTIDS.length - 1 && (
-                                <DraggableCell
-                                  style={{
-                                    background:
-                                      cell[d_index][t_index] === null
-                                        ? "#808080"
-                                        : cell[d_index][t_index]
-                                        ? "#94C9CD"
-                                        : "#F0F0F0",
-                                  }}
-                                  // ref={t === 43 ? ref : null}
-                                  drag={drag}
-                                  index={[d_index, t_index]}
-                                  key={t_index}
-                                  ref={TimeCellRef}
-                                />
-                              )
-                          )}
-                        </ContentContainer.MyAvailability.VotingContainer.CellsContainer.DayColumn>
-                      ))}
-                    </ContentContainer.MyAvailability.VotingContainer.CellsContainer>
-                  </ScrollSyncPane>
-                </ContentContainer.MyAvailability.VotingContainer>
-                <ContentContainer.MyAvailability.VotingContainer
-                  style={{ gridColumn: "2/3" }}
-                >
-                  <ContentContainer.MyAvailability.VotingContainer.TimeContainer
-                    style={{
-                      marginTop: `${timeTop - 3}px`,
-                    }}
-                  >
-                    {TIMESLOTIDS.map((m, index) => (
-                      <div ref={TimeRef} key={index}>
-                        {slotIDProcessing(m)}
-                      </div>
-                    ))}
-                  </ContentContainer.MyAvailability.VotingContainer.TimeContainer>
-                  <ScrollSyncPane>
-                    <ContentContainer.MyAvailability.VotingContainer.CellsContainer>
-                      {DATERANGE.map((m, d_index) => (
-                        <ContentContainer.MyAvailability.VotingContainer.CellsContainer.DayColumn
-                          key={d_index}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                            }}
-                            ref={WeekdayRef}
-                          >
-                            <div style={{ userSelect: "none" }}>
-                              {moment(m).format("MMM D")}
-                            </div>
-                            <div
-                              style={{ userSelect: "none", fontWeight: "700" }}
-                            >
-                              {moment(m).format("ddd")}
-                            </div>
-                          </div>
-                          {TIMESLOTIDS.map(
-                            (_, t_index) =>
-                              t_index !== TIMESLOTIDS.length - 1 && (
-                                <InfoCell
-                                  key={t_index}
-                                  style={{
-                                    backgroundColor:
-                                      CELLCOLOR[
-                                        d_index * (TIMESLOTIDS.length - 1) +
-                                          t_index
-                                      ],
-                                  }}
-                                  info={
-                                    <CellHoverContainer>
-                                      <CellHoverContainer.CellHoverInfo>
-                                        <div
-                                          style={{
-                                            fontWeight: "bold",
-                                            textDecoration: "underline",
-                                          }}
-                                        >
-                                          Availble
-                                        </div>
-                                        {VOTINGINFO?.[
-                                          d_index * (TIMESLOTIDS.length - 1) +
-                                            t_index
-                                        ]?.available_members.map((m, index) => (
-                                          <div key={index}>{m}</div>
-                                        ))}
-                                      </CellHoverContainer.CellHoverInfo>
-                                      <CellHoverContainer.CellHoverInfo>
-                                        <div
-                                          style={{
-                                            fontWeight: "bold",
-                                            textDecoration: "underline",
-                                          }}
-                                        >
-                                          Unavailble
-                                        </div>
-                                        {VOTINGINFO?.[
-                                          d_index * (TIMESLOTIDS.length - 1) +
-                                            t_index
-                                        ]?.unavailable_members.map(
-                                          (m, index) => (
-                                            <div key={index}>{m}</div>
-                                          )
-                                        )}
-                                      </CellHoverContainer.CellHoverInfo>
-                                    </CellHoverContainer>
-                                  }
-                                />
-                              )
-                          )}
-                        </ContentContainer.MyAvailability.VotingContainer.CellsContainer.DayColumn>
-                      ))}
-                    </ContentContainer.MyAvailability.VotingContainer.CellsContainer>
-                  </ScrollSyncPane>
-                </ContentContainer.MyAvailability.VotingContainer>
-              </Base.FullContainer.ContentContainer>
-            )}
-          </Base.FullContainer>
 
-          {/* <div style={{ width: "100%", position: "relative" }}>
-          <div
-            style={{
-              borderLeft: "1px #000000 dashed",
-              width: "100%",
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
-            <NameWrapper>
-              <div
-                style={{
-                  fontFamily: "Roboto",
-                  fontStyle: "normal",
-                  fontWeight: "500",
-                  fontSize: "calc(100vmin * 30 / 1080)",
-                }}
-              >
-                SDM Class
-              </div>
-            </NameWrapper>
-            <FormWrapper onMouseUp={handleCellMouseUp}>
-              <div
-                style={{
-                  fontFamily: "Roboto",
-                  fontWeight: "500",
-                  fontSize: "20px",
-                }}
-              >
-                My Availability
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  columnGap: "2px",
-                  width: "100%",
-                  justifyContent: "center",
-                }}
-              >
-                <DayColumn
-                  style={{
-                    alignItems: "flex-end",
-                    marginRight: "5px",
-                    marginTop: "-10px",
-                  }}
-                >
-                  <div style={{ opacity: "0" }}>Mar 29</div>
-                  <div style={{ opacity: "0" }}>Wed</div>
-                  {TIMESLOTIDS.map((t, Tindex) => (
-                    <div
-                      key={Tindex}
+  const handleUndoRedo = async (e) => {
+    let opr;
+    if (e.ctrlKey) {
+      switch (e.key) {
+        case "\u001a":
+          if (undo.length) {
+            opr = undo[0];
+            setRedo((prev) => [undo[0], ...prev]);
+            setUndo((prev) => prev.slice(1));
+          }
+          break;
+        // case "\u0019":
+        //   if (redo.length) {
+        //     opr = redo[0];
+        //     setUndo((prev) => [redo[0], ...prev]);
+        //     setRedo((prev) => prev.slice(1));
+        //   }
+        //   break;
+        default:
+          break;
+      }
+    }
+    if (opr && !loading) {
+      try {
+        let API;
+        setLoading(true);
+        const { api, data } = opr;
+        if (e.key === "\u001a") {
+          API = api === "delete" ? addMyAvailability : deleteMyAvailability;
+        } else {
+          API = api === "delete" ? deleteMyAvailability : addMyAvailability;
+        }
+        await API(code, data);
+        const { data: votingData } = await getGroupAvailability(code);
+        setGroupAvailabilityInfo(votingData.data);
+        const { data: myAvailability } = await getMyAvailability(
+          code,
+          location?.state?.guestName,
+          location?.state?.guestPassword
+        );
+        setCell(
+          DATERANGE.map((w) =>
+            TIMESLOTIDS.map((t) =>
+              myAvailability.find((d) => d.date === w && d.time_slot_id === t)
+                ? true
+                : ROUTINE.find(
+                    (r) =>
+                      r.weekday === Moment(w).format("ddd").toUpperCase() &&
+                      r.time_slot_id === t
+                  )
+                ? null
+                : false
+            )
+          )
+        );
+      } catch (error) {
+        alert(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const throttlehandleUndoRedo = useCallback(_.throttle(handleUndoRedo, 1000), [
+    undo,
+    redo,
+    loading,
+  ]);
+
+  useEffect(() => {
+    window.addEventListener("keypress", throttlehandleUndoRedo);
+    return () => {
+      window.removeEventListener("keypress", throttlehandleUndoRedo);
+    };
+  }, [undo, redo, loading]);
+
+  const handleReset = async () => {
+    setLoading(true);
+    let add = [];
+    let del = [];
+    for (const d in cell) {
+      for (const t in cell[d]) {
+        if (cell[d][t] && !initialCell[d][t]) {
+          del.push([d, t]);
+        }
+        if (!cell[d][t] && initialCell[d][t]) {
+          add.push([d, t]);
+        }
+      }
+    }
+    await deleteMyAvailability(code, {
+      time_slots: del.map((u) => ({
+        date: DATERANGE[u[0]],
+        time_slot_id: TIMESLOTIDS[u[1]],
+      })),
+      name: location?.state?.guestName ?? null,
+      password: location?.state?.guestPassword ?? null,
+    });
+    await addMyAvailability(code, {
+      time_slots: add.map((u) => ({
+        date: DATERANGE[u[0]],
+        time_slot_id: TIMESLOTIDS[u[1]],
+      })),
+      name: location?.state?.guestName ?? null,
+      password: location?.state?.guestPassword ?? null,
+    });
+    const { data: votingData } = await getGroupAvailability(code);
+    setGroupAvailabilityInfo(votingData.data);
+    setUndo([]);
+    setRedo([]);
+    setCell(initialCell);
+    setLoading(false);
+  };
+
+  return (
+    exist !== undefined &&
+    (error ? (
+      <Error />
+    ) : (
+      <ScrollSync>
+        <motion.div {...PAGE_TRANSITION.RightSlideIn}>
+          <Base login={login} onMouseUp={handleCellMouseUp}>
+            <Base.FullContainer>
+              {cell.length > 0 && (
+                <Base.FullContainer.ContentContainer>
+                  <ContentContainer.Title>
+                    <BackButton
                       style={{
-                        height: "20px",
-                        userSelect: startDrag ? "none" : "text",
+                        position: "absolute",
+                        right: "100%",
+                        marginRight: RWDWidth(30),
                       }}
-                    >
-                      {slotIDProcessing(t)}
-                    </div>
-                  ))}
-                </DayColumn>
-                <ScrollSyncPane>
-                  <div
-                    style={{
-                      display: "flex",
-                      columnGap: "2px",
-                      overflowX: "auto",
-                      maxWidth: "80%",
-                    }}
-                    onScroll={(e) => {
-                      console.log(e.target);
-                    }}
+                      onClick={() => {
+                        navigate(`/meets/${code}`);
+                      }}
+                    ></BackButton>
+                    {title}
+                  </ContentContainer.Title>
+                  <ContentContainer.MyAvailability
+                    style={{ columnGap: RWDWidth(10) }}
                   >
-                    {DATERANGE.map((date, c_index) => (
-                      <DayColumn key={c_index}>
-                        <div style={{ userSelect: "none" }}>
-                          {moment(date).format("MMM DD")}
-                        </div>
-                        <div style={{ userSelect: "none" }}>
-                          {moment(date).format("ddd")}
-                        </div>
-                        {TIMESLOTIDS.slice(0, -1).map((_, r_index) => (
-                          <Cell
-                            key={r_index}
+                    {t("myAva")}
+                    <PillButton
+                      variant="hollow"
+                      buttonTheme="#D8D8D8"
+                      onClick={handleReset}
+                    >
+                      Reset
+                    </PillButton>
+                  </ContentContainer.MyAvailability>
+                  <ContentContainer.GroupAvailability>
+                    {t("groupAva")}
+                  </ContentContainer.GroupAvailability>
+                  <ContentContainer.MyAvailability.VotingArea>
+                    <VoteOverflowX
+                      DATERANGE={DATERANGE}
+                      TIMESLOTIDS={TIMESLOTIDS}
+                      Cells={DATERANGE.map((_, d_index) =>
+                        TIMESLOTIDS.map((_, t_index) => (
+                          <DraggableCell
                             style={{
-                              background: cell[c_index][r_index]
-                                ? "#94C9CD"
-                                : "#F0F0F0",
+                              background:
+                                cell[d_index][t_index] === null
+                                  ? "#808080"
+                                  : cell[d_index][t_index]
+                                  ? "#94C9CD"
+                                  : "#F0F0F0",
                             }}
-                            onMouseDown={handleCellMouseDown([
-                              c_index,
-                              r_index,
-                            ])}
-                            onMouseEnter={handleCellMouseEnter([
-                              c_index,
-                              r_index,
-                            ])}
-                            onClick={handleCellClick([c_index, r_index])}
+                            drag={drag}
+                            index={[d_index, t_index]}
+                            key={t_index}
                           />
-                        ))}
-                      </DayColumn>
-                    ))}
-                  </div>
-                </ScrollSyncPane>
-              </div>
-            </FormWrapper>
-          </div>
-        </div> */}
-        </Base>
-      </motion.div>
-    </ScrollSync>
+                        ))
+                      )}
+                    />
+                  </ContentContainer.MyAvailability.VotingArea>
+                  <ContentContainer.MyAvailability.VotingArea
+                    style={{ gridColumn: "2/3" }}
+                  >
+                    <VoteOverflowX
+                      DATERANGE={DATERANGE}
+                      TIMESLOTIDS={TIMESLOTIDS}
+                      Cells={DATERANGE.map((_, d_index) =>
+                        TIMESLOTIDS.map((_, t_index) => (
+                          <InfoCell
+                            key={t_index}
+                            style={{
+                              backgroundColor:
+                                CELLCOLOR[
+                                  d_index * (TIMESLOTIDS.length - 1) + t_index
+                                ],
+                            }}
+                            info={
+                              <InfoTooltip
+                                available_members={
+                                  groupAvailabilityInfo?.[
+                                    d_index * (TIMESLOTIDS.length - 1) + t_index
+                                  ]?.available_members
+                                }
+                                unavailable_members={
+                                  groupAvailabilityInfo?.[
+                                    d_index * (TIMESLOTIDS.length - 1) + t_index
+                                  ]?.unavailable_members
+                                }
+                              />
+                            }
+                          />
+                        ))
+                      )}
+                    />
+                  </ContentContainer.MyAvailability.VotingArea>
+                </Base.FullContainer.ContentContainer>
+              )}
+            </Base.FullContainer>
+          </Base>
+        </motion.div>
+      </ScrollSync>
+    ))
   );
 };
 
